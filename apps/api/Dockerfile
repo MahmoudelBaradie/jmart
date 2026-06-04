@@ -20,15 +20,17 @@ RUN pnpm build
 
 # ─── Production ──────────────────────────────────────────
 FROM node:20-alpine AS production
-RUN npm install -g pnpm && apk add --no-cache curl
+# `prisma` CLI lives in devDependencies, which `pnpm install --prod` skips.
+# Install it as a global binary here so we can `prisma generate` against
+# @prisma/client (which IS in regular deps).
+RUN npm install -g pnpm prisma && apk add --no-cache curl
 WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --prod --no-frozen-lockfile
-# pnpm stores Prisma client as a symlink under node_modules/.pnpm — copying
-# /app/node_modules/.prisma from the builder yields a broken link. Generate
-# fresh in this stage instead; needs the schema, hence prisma/ is copied first.
+# Generate fresh Prisma client in this stage — copying it from the builder
+# fails because pnpm uses symlinks under node_modules/.pnpm.
 COPY prisma ./prisma
-RUN pnpm db:generate
+RUN prisma generate
 COPY --from=builder /app/dist ./dist
 # Drop privileges — never run a public-facing Node process as root
 RUN chown -R node:node /app
