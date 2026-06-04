@@ -26,11 +26,34 @@ services:
       target: production
     env_file:
       - ./apps/api/.env.server
-    command: node dist/main
+    # Override the hardcoded dev passwords/URLs baked into the base
+    # docker-compose.yml. Compose merges `environment` blocks, and the
+    # override file's values WIN — so this is how we replace `jmart_pass`
+    # with the production secrets.
+    environment:
+      DATABASE_URL: postgresql://jmart_user:${DB_PASS:?missing DB_PASS}@postgres:5432/jmart_db?schema=public
+      DATABASE_DIRECT_URL: postgresql://jmart_user:${DB_PASS}@postgres:5432/jmart_db?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASS:?missing REDIS_PASS}
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_ACCESS_KEY: ${MINIO_KEY:?missing MINIO_KEY}
+      STORAGE_SECRET_KEY: ${MINIO_SECRET:?missing MINIO_SECRET}
+      SMTP_HOST: ""
+      SMTP_PORT: "587"
+      NODE_ENV: production
+    command: node dist/src/main.js
+    # Drop the bind-mount + node_modules tmpfs from the base file — in prod
+    # we use the built image as-is.
     volumes: []
     ports:
       - '8100:3000'                # API
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   admin:
     build:
@@ -77,17 +100,33 @@ services:
   # ─── Data plane: stays OFF the public internet ──────────────────────────
   # These ports are explicitly empty so the data services are only reachable
   # from inside the docker network — never from the IP.
+  # Passwords are pulled from the root .env file (gitignored). REQUIRED keys
+  # in that file: DB_PASS, REDIS_PASS, MINIO_KEY, MINIO_SECRET.
   postgres:
     ports: []
     restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASS:?missing DB_PASS in root .env}
+      POSTGRES_USER: jmart_user
+      POSTGRES_DB: jmart_db
 
   redis:
     ports: []
     restart: unless-stopped
+    # Override the base command so redis actually requires the prod password.
+    command: ["redis-server", "--requirepass", "${REDIS_PASS:?missing REDIS_PASS in root .env}", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASS}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   minio:
     ports: []
     restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_KEY:?missing MINIO_KEY in root .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET:?missing MINIO_SECRET in root .env}
 
   # The full prod compose has an nginx service; we disable it here by giving
   # it a profile that's never activated. The host's existing nginx will
