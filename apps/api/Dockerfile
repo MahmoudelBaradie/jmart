@@ -13,7 +13,7 @@ CMD ["pnpm", "dev"]
 
 # ─── Builder ─────────────────────────────────────────────
 FROM base AS builder
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 COPY . .
 RUN pnpm db:generate
 RUN pnpm build
@@ -23,7 +23,7 @@ FROM node:20-alpine AS production
 RUN npm install -g pnpm && apk add --no-cache curl
 WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --no-frozen-lockfile
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY prisma ./prisma
