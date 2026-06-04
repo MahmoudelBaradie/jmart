@@ -24,9 +24,12 @@ RUN npm install -g pnpm && apk add --no-cache curl
 WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --prod --no-frozen-lockfile
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+# pnpm stores Prisma client as a symlink under node_modules/.pnpm — copying
+# /app/node_modules/.prisma from the builder yields a broken link. Generate
+# fresh in this stage instead; needs the schema, hence prisma/ is copied first.
 COPY prisma ./prisma
+RUN pnpm db:generate
+COPY --from=builder /app/dist ./dist
 # Drop privileges — never run a public-facing Node process as root
 RUN chown -R node:node /app
 USER node
