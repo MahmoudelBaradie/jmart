@@ -1,0 +1,113 @@
+version: '3.9'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Production override. Apply on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Set in your shell or .env first:
+#   PUBLIC_API_URL=https://api.jmart.app/api/v1
+#   PUBLIC_ADMIN_HOST=admin.jmart.app
+#   PUBLIC_FARMER_HOST=farmer.jmart.app
+#   PUBLIC_DRIVER_HOST=driver.jmart.app
+#
+# Each Next.js app is built with the BROWSER-FACING API URL — using
+# `http://api:3000/api/v1` (Docker DNS) here would break every browser
+# request the moment a user opens the site outside the Docker network.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: production
+    env_file:
+      - ./apps/api/.env.production
+    command: node dist/main
+    volumes: []
+    # API listens on 3000 inside the docker network; nginx handles the
+    # public-facing TLS termination. Do NOT publish to the host.
+    ports: []
+
+  admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+      target: production
+      args:
+        # Browser-facing URL baked into the bundle at build time.
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-https://api.example.com/api/v1}
+    container_name: jmart_admin
+    restart: unless-stopped
+    expose:
+      - '3002'
+    depends_on:
+      - api
+    networks:
+      - default
+
+  farmer:
+    build:
+      context: ./apps/farmer
+      dockerfile: Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-https://api.example.com/api/v1}
+    container_name: jmart_farmer
+    restart: unless-stopped
+    expose:
+      - '3003'
+    depends_on:
+      - api
+    networks:
+      - default
+
+  # ─── Driver portal (added in production) ──────────────────────────────
+  driver:
+    build:
+      context: ./apps/driver
+      dockerfile: Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-https://api.example.com/api/v1}
+    container_name: jmart_driver
+    restart: unless-stopped
+    expose:
+      - '3004'
+    depends_on:
+      - api
+    networks:
+      - default
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: jmart_nginx
+    restart: unless-stopped
+    environment:
+      ADMIN_HOST: ${PUBLIC_ADMIN_HOST:-admin.example.com}
+      FARMER_HOST: ${PUBLIC_FARMER_HOST:-farmer.example.com}
+      DRIVER_HOST: ${PUBLIC_DRIVER_HOST:-driver.example.com}
+      API_HOST: ${PUBLIC_API_HOST:-api.example.com}
+    ports:
+      - '80:80'
+      - '443:443'
+    depends_on:
+      - api
+      - admin
+      - farmer
+      - driver
+    networks:
+      - default
+
+  # ─── Data plane: keep OFF the public internet ─────────────────────────
+  # Postgres / Redis / MinIO are reachable only inside the docker network.
+  # If you need temporary access from your laptop, use an SSH tunnel rather
+  # than re-publishing 5432 / 6379 / 9000 to the host.
+  postgres:
+    ports: []
+  redis:
+    ports: []
+  minio:
+    ports: []

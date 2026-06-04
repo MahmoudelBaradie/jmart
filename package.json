@@ -1,0 +1,22 @@
+{
+  "name": "jmart",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Geo-Based Agricultural Supply Chain Platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "pnpm --filter @jmart/api dev",
+    "build:api": "pnpm --filter @jmart/api build",
+    "db:migrate": "pnpm --filter @jmart/api db:migrate",
+    "db:generate": "pnpm --filter @jmart/api db:generate",
+    "db:seed": "pnpm --filter @jmart/api db:seed",
+    "db:studio": "pnpm --filter @jmart/api db:studio"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "API (NestJS)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "apps/api",
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "Admin Panel (Next.js)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["next", "dev"],
+      "cwd": "apps/admin",
+      "port": 3002,
+      "autoPort": true
+    },
+    {
+      "name": "Farmer/Buyer Portal (Next.js)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["next", "dev"],
+      "cwd": "apps/farmer",
+      "port": 3003,
+      "autoPort": true
+    },
+    {
+      "name": "Mobile App (Expo Web)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "expo", "start", "--web", "--clear"],
+      "cwd": "apps/mobile",
+      "port": 8081,
+      "autoPort": true
+    }
+  ]
+}

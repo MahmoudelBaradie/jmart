@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jmart — معرض شاشات النظام</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel-2: #334155;
+    --text: #f1f5f9;
+    --text-soft: #94a3b8;
+    --brand: #16a34a;
+    --brand-soft: #052e16;
+    --accent: #fbbf24;
+    --shadow: 0 10px 40px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Tajawal', system-ui, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  /* ── Header ──────────────────────────────────────────── */
+  header {
+    padding: 40px 24px 24px;
+    text-align: center;
+    background: radial-gradient(circle at 50% 0%, rgba(22, 163, 74, 0.2), transparent 60%);
+  }
+  .logo {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: var(--brand); color: #fff;
+    padding: 8px 18px; border-radius: 12px;
+    font-weight: 900; font-size: 20px;
+    box-shadow: 0 4px 20px rgba(22,163,74,0.4);
+  }
+  h1 { font-size: 36px; font-weight: 900; margin-top: 16px; }
+  .subtitle { color: var(--text-soft); margin-top: 8px; font-size: 16px; max-width: 600px; margin-inline: auto; }
+  .meta {
+    display: inline-flex; gap: 8px; flex-wrap: wrap;
+    justify-content: center; margin-top: 18px;
+  }
+  .badge {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;
+    color: var(--text-soft);
+  }
+  .badge strong { color: var(--brand); }
+
+  /* ── Sections ────────────────────────────────────────── */
+  section {
+    padding: 32px 24px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+  .section-head {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--panel);
+  }
+  .section-head h2 { font-size: 24px; font-weight: 900; }
+  .section-head .pill {
+    background: var(--brand); color: #fff;
+    padding: 4px 10px; border-radius: 8px;
+    font-size: 11px; font-weight: 800;
+  }
+  .section-desc { color: var(--text-soft); margin-bottom: 20px; font-size: 14px; }
+
+  /* ── Phone frames (mobile) ───────────────────────────── */
+  .phones {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    gap: 24px;
+  }
+  .phone {
+    background: #000;
+    border-radius: 32px;
+    padding: 8px;
+    box-shadow: var(--shadow);
+    position: relative;
+    transition: transform 0.2s;
+  }
+  .phone:hover { transform: translateY(-4px); }
+  .phone::before {
+    /* Notch */
+    content: '';
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 80px; height: 16px; background: #000;
+    border-radius: 0 0 12px 12px; z-index: 2;
+  }
+  .phone iframe {
+    width: 100%; height: 600px;
+    border: 0; border-radius: 26px;
+    background: #fff;
+    display: block;
+  }
+  .phone-label {
+    position: absolute; bottom: -30px; left: 0; right: 0;
+    text-align: center;
+    font-size: 13px; font-weight: 700;
+    color: var(--text);
+  }
+  .phone-label small { display: block; color: var(--text-soft); font-weight: 500; font-size: 11px; margin-top: 2px; }
+
+  /* ── Browser frames (web) ────────────────────────────── */
+  .browsers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(540px, 1fr));
+    gap: 28px;
+  }
+  .browser {
+    background: var(--panel);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s;
+  }
+  .browser:hover { transform: translateY(-3px); }
+  .browser-bar {
+    background: var(--panel-2);
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .browser-bar .dots { display: flex; gap: 5px; }
+  .browser-bar .dot { width: 11px; height: 11px; border-radius: 50%; background: #475569; }
+  .browser-bar .dot.r { background: #ef4444; }
+  .browser-bar .dot.y { background: #f59e0b; }
+  .browser-bar .dot.g { background: #22c55e; }
+  .browser-bar .url {
+    flex: 1; background: rgba(0,0,0,0.3);
+    padding: 5px 12px; border-radius: 6px;
+    font-size: 11px; color: var(--text-soft);
+    font-family: 'Courier New', monospace;
+    text-align: left; direction: ltr;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .browser iframe {
+    width: 100%; height: 520px;
+    border: 0;
+    background: #fff;
+    display: block;
+  }
+  .browser-label {
+    padding: 12px 16px;
+    background: var(--panel);
+    border-top: 1px solid rgba(255,255,255,0.05);
+    font-size: 13px; font-weight: 700;
+    color: var(--text);
+  }
+  .browser-label small { display: block; color: var(--text-soft); font-weight: 500; font-size: 11px; margin-top: 2px; }
+
+  /* ── Footer ──────────────────────────────────────────── */
+  footer {
+    padding: 30px;
+    text-align: center;
+    color: var(--text-soft);
+    font-size: 12px;
+    border-top: 1px solid var(--panel);
+    margin-top: 40px;
+  }
+  footer code {
+    background: var(--panel);
+    padding: 2px 6px; border-radius: 4px;
+    font-family: 'Courier New', monospace;
+  }
+
+  /* ── Tip ─────────────────────────────────────────────── */
+  .tip {
+    background: linear-gradient(135deg, #052e16 0%, #064e3b 100%);
+    border: 1px solid #16a34a;
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin: 20px 0;
+    font-size: 13px;
+    color: #dcfce7;
+    display: flex; gap: 12px; align-items: center;
+  }
+  .tip-icon {
+    width: 32px; height: 32px;
+    background: #16a34a;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .tip strong { color: #fff; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🍃 جمارت</div>
+  <h1>معرض شاشات النظام</h1>
+  <p class="subtitle">عرض حيّ تفاعلي لكل واجهات Jmart — الموبايل، بوابة المزرعة/المشتري، ولوحة الإدارة</p>
+  <div class="meta">
+    <span class="badge"><strong>API</strong> :3000</span>
+    <span class="badge"><strong>Admin</strong> :65141</span>
+    <span class="badge"><strong>Portal</strong> :54343</span>
+    <span class="badge"><strong>Mobile</strong> :8081</span>
+    <span class="badge"><strong>4</strong> تطبيقات</span>
+    <span class="badge"><strong>20+</strong> شاشة</span>
+  </div>
+</header>
+
+<section>
+  <div class="tip">
+    <div class="tip-icon">💡</div>
+    <div>
+      <strong>للتفاعل مع أي شاشة</strong>: مرّر الفأرة فوقها واضغط للدخول.
+      كل الشاشات حيّة ومتصلة بنفس قاعدة البيانات.
+      <br>
+      <strong>للدخول</strong>: <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;color:#fff;">demo@jmart.sa</code> / <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;color:#fff;">Demo@Jmart2026!</code>
+      &nbsp;&nbsp; (Admin: <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;color:#fff;">admin@jmart.sa</code> / <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;color:#fff;">Admin@Jmart2026!</code>)
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  📱 MOBILE APP                                      -->
+<!-- ════════════════════════════════════════════════════ -->
+<section>
+  <div class="section-head">
+    <h2>📱 تطبيق الموبايل</h2>
+    <span class="pill">Expo · React Native</span>
+  </div>
+  <p class="section-desc">
+    تطبيق المزرعة + المشتري — 4 تبويبات سفلية، الإشعارات في الأعلى، دعم العربية/الإنجليزية، RTL/LTR تلقائي.
+  </p>
+
+  <div class="phones">
+    <div class="phone">
+      <iframe src="http://localhost:8081/"></iframe>
+      <div class="phone-label">الرئيسية <small>Hero + إحصائيات + إجراءات سريعة</small></div>
+    </div>
+    <div class="phone">
+      <iframe src="http://localhost:8081/marketplace"></iframe>
+      <div class="phone-label">السوق <small>بنرات إدارية + steppers</small></div>
+    </div>
+    <div class="phone">
+      <iframe src="http://localhost:8081/listings"></iframe>
+      <div class="phone-label">عروضي <small>Hero stats + بحث + tabs</small></div>
+    </div>
+    <div class="phone">
+      <iframe src="http://localhost:8081/orders"></iframe>
+      <div class="phone-label">الطلبات <small>قائمة بفلاتر الحالة</small></div>
+    </div>
+    <div class="phone">
+      <iframe src="http://localhost:8081/more"></iframe>
+      <div class="phone-label">المزيد <small>+ تبديل اللغة + خروج</small></div>
+    </div>
+    <div class="phone">
+      <iframe src="http://localhost:8081/profile"></iframe>
+      <div class="phone-label">الملف الشخصي <small>معلومات الحساب</small></div>
+    </div>
+    <div class="phone">
+      <iframe src="http://localhost:8081/notifications"></iframe>
+      <div class="phone-label">الإشعارات <small>كل الإشعارات</small></div>
+    </div>
+    <div class="phone">
+      <iframe src="http://localhost:8081/contracts"></iframe>
+      <div class="phone-label">العقود <small>عقودي النشطة</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  🌾🛒 FARMER / BUYER PORTAL                          -->
+<!-- ════════════════════════════════════════════════════ -->
+<section>
+  <div class="section-head">
+    <h2>🌾🛒 بوابة المزرعة والمشتري</h2>
+    <span class="pill">Next.js 14 · RTL</span>
+  </div>
+  <p class="section-desc">
+    البوابة الموحّدة لكل من المزرعة والمشتري — تبديل أدوار للحسابات ثنائية الدور، Sidebar كامل، شاشات تفصيلية.
+  </p>
+
+  <div class="browsers">
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:54343/</div>
+      </div>
+      <iframe src="http://localhost:54343/"></iframe>
+      <div class="browser-label">الرئيسية <small>Dashboard ثنائي الدور</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:54343/marketplace</div>
+      </div>
+      <iframe src="http://localhost:54343/marketplace"></iframe>
+      <div class="browser-label">السوق <small>صور + Trust badges + grid</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:54343/listings</div>
+      </div>
+      <iframe src="http://localhost:54343/listings"></iframe>
+      <div class="browser-label">عروضي <small>إدارة كل اللوتات</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:54343/orders</div>
+      </div>
+      <iframe src="http://localhost:54343/orders"></iframe>
+      <div class="browser-label">طلباتي / الواردة <small>قائمة كاملة</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:54343/community</div>
+      </div>
+      <iframe src="http://localhost:54343/community"></iframe>
+      <div class="browser-label">المجتمع <small>منشورات + تعليقات + إعجابات</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:54343/farms/my</div>
+      </div>
+      <iframe src="http://localhost:54343/farms/my"></iframe>
+      <div class="browser-label">مزارعي <small>إدارة المزارع (مزرعة)</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:54343/addresses</div>
+      </div>
+      <iframe src="http://localhost:54343/addresses"></iframe>
+      <div class="browser-label">عناويني <small>فروع التوصيل (مشتري)</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:54343/contracts</div>
+      </div>
+      <iframe src="http://localhost:54343/contracts"></iframe>
+      <div class="browser-label">العقود <small>عقودي الموقّعة</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:54343/disputes</div>
+      </div>
+      <iframe src="http://localhost:54343/disputes"></iframe>
+      <div class="browser-label">النزاعات <small>نزاعاتي + الأدلة</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:54343/farms</div>
+      </div>
+      <iframe src="http://localhost:54343/farms"></iframe>
+      <div class="browser-label">المزارع (للمشتري) <small>تصفّح المزارع المتعاقدة</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!--  🖥️  ADMIN PANEL                                     -->
+<!-- ════════════════════════════════════════════════════ -->
+<section>
+  <div class="section-head">
+    <h2>🖥️ لوحة الإدارة</h2>
+    <span class="pill">Internal Only</span>
+  </div>
+  <p class="section-desc">
+    لوحة العمليات الداخلية — إدارة المنتجات، الأصناف، البنرات، المزارع، المشترين، الطلبات، الجودة، النزاعات.
+  </p>
+
+  <div class="browsers">
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:65141/</div>
+      </div>
+      <iframe src="http://localhost:65141/"></iframe>
+      <div class="browser-label">Dashboard <small>ملخص العمليات</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:65141/orders</div>
+      </div>
+      <iframe src="http://localhost:65141/orders"></iframe>
+      <div class="browser-label">الطلبات <small>كل الطلبات + الحالة</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:65141/categories</div>
+      </div>
+      <iframe src="http://localhost:65141/categories"></iframe>
+      <div class="browser-label">الأصناف <small>إدارة الفئات + CRUD</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:65141/banners</div>
+      </div>
+      <iframe src="http://localhost:65141/banners"></iframe>
+      <div class="browser-label">بنرات السوق <small>إدارة + استهداف منطقة</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:65141/farmers</div>
+      </div>
+      <iframe src="http://localhost:65141/farmers"></iframe>
+      <div class="browser-label">المزارعون <small>قائمة + KYC + تفاصيل</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:65141/buyers</div>
+      </div>
+      <iframe src="http://localhost:65141/buyers"></iframe>
+      <div class="browser-label">المشترون <small>إدارة الحسابات</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:65141/products</div>
+      </div>
+      <iframe src="http://localhost:65141/products"></iframe>
+      <div class="browser-label">المنتجات <small>كتالوج المنتجات</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:65141/disputes</div>
+      </div>
+      <iframe src="http://localhost:65141/disputes"></iframe>
+      <div class="browser-label">النزاعات <small>الحل + توثيق الأدلة</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:65141/contracts</div>
+      </div>
+      <iframe src="http://localhost:65141/contracts"></iframe>
+      <div class="browser-label">العقود <small>عقود التوريد</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:65141/logistics</div>
+      </div>
+      <iframe src="http://localhost:65141/logistics"></iframe>
+      <div class="browser-label">اللوجستيات <small>الشحنات + السائقين</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:65141/warehouses</div>
+      </div>
+      <iframe src="http://localhost:65141/warehouses"></iframe>
+      <div class="browser-label">المستودعات <small>المخزون + الحرارة</small></div>
+    </div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="url">localhost:65141/quality</div>
+      </div>
+      <iframe src="http://localhost:65141/quality"></iframe>
+      <div class="browser-label">الجودة <small>فحوصات + تقارير</small></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>
+    Jmart System Showroom — تم توليدها تلقائياً من السيرفرات الحيّة.
+    <br>
+    <code>API: localhost:3000</code> · <code>Admin: localhost:65141</code> · <code>Portal: localhost:54343</code> · <code>Mobile: localhost:8081</code>
+  </p>
+  <p style="margin-top: 8px;">📅 تاريخ التوليد: <span id="ts"></span></p>
+</footer>
+
+<script>
+  document.getElementById('ts').textContent = new Date().toLocaleString('ar-SA');
+</script>
+
+</body>
+</html>

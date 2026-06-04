@@ -1,0 +1,50 @@
+{
+  "name": "جمارت — بوابة المزارعين والمشترين",
+  "short_name": "جمارت",
+  "description": "منصة جمارت للزراعة الرقمية — ربط المزارعين والمشترين",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "orientation": "portrait",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["agriculture", "business", "food"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "السوق",
+      "short_name": "السوق",
+      "description": "تصفح منتجات السوق",
+      "url": "/marketplace",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "الطلبات",
+      "short_name": "الطلبات",
+      "description": "عرض طلباتي",
+      "url": "/orders",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "تتبع شحنة",
+      "short_name": "التتبع",
+      "description": "تتبع شحنتك",
+      "url": "/track",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

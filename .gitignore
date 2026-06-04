@@ -1,0 +1,54 @@
+# ── Dependencies ───────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ── Build outputs ──────────────────────────────
+dist/
+build/
+out/
+.next/
+.expo/
+.turbo/
+*.tsbuildinfo
+
+# ── Caches ─────────────────────────────────────
+.cache/
+.parcel-cache/
+coverage/
+
+# ── Logs ───────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Environment / secrets ──────────────────────
+.env
+.env.*
+!.env.example
+token_resp.json
+*CJmarttoken.json
+*token.json
+*.pem
+*.key
+
+# ── Databases (local dev) ──────────────────────
+prisma/migrations/dev.db
+*.sqlite
+*.sqlite3
+*.db
+
+# ── OS files ───────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor / IDE ───────────────────────────────
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+*.swo

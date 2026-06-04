@@ -1,0 +1,115 @@
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events { worker_connections 1024; }
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+    access_log /var/log/nginx/access.log main;
+
+    sendfile on;
+    keepalive_timeout 65;
+
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/xml application/json application/javascript
+               application/rss+xml application/atom+xml image/svg+xml;
+
+    # ─── Upstreams (Docker DNS) ───────────────────────────────────
+    upstream api     { server api:3000;    }
+    upstream admin   { server admin:3002;  }
+    upstream farmer  { server farmer:3003; }
+    upstream driver  { server driver:3004; }
+
+    map $http_upgrade $connection_upgrade {
+        default upgrade;
+        ''      close;
+    }
+
+    # ─────────────────────────────────────────────────────────────
+    # ${API_HOST}  ──  REST + Swagger
+    # ─────────────────────────────────────────────────────────────
+    server {
+        listen 80;
+        server_name ${API_HOST};
+        client_max_body_size 25M;
+
+        location / {
+            proxy_pass http://api;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_read_timeout 60s;
+        }
+    }
+
+    # ─────────────────────────────────────────────────────────────
+    # ${ADMIN_HOST}  ──  internal staff portal
+    # ─────────────────────────────────────────────────────────────
+    server {
+        listen 80;
+        server_name ${ADMIN_HOST};
+
+        # Optional office-IP allowlist
+        # allow 1.2.3.4/32;
+        # deny  all;
+
+        location / {
+            proxy_pass http://admin;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+
+    # ─────────────────────────────────────────────────────────────
+    # ${FARMER_HOST}  ──  buyer + farmer portal (also catches unknown hosts)
+    # ─────────────────────────────────────────────────────────────
+    server {
+        listen 80 default_server;
+        server_name ${FARMER_HOST} _;
+
+        location / {
+            proxy_pass http://farmer;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+
+    # ─────────────────────────────────────────────────────────────
+    # ${DRIVER_HOST}  ──  independent shipping drivers
+    # ─────────────────────────────────────────────────────────────
+    server {
+        listen 80;
+        server_name ${DRIVER_HOST};
+
+        location / {
+            proxy_pass http://driver;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+}

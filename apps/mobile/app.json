@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "جمارت",
+    "slug": "jmart",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "jmart",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#16a34a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "sa.jmart.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#16a34a"
+      },
+      "package": "sa.jmart.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#16a34a"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -1,0 +1,40 @@
+name: PR Check
+
+on:
+  pull_request:
+
+jobs:
+  basic-checks:
+    name: Basic Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [api, admin, farmer]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          # Workspace uses a single root lockfile; per-app locks don't exist
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client (api only)
+        if: matrix.app == 'api'
+        working-directory: apps/api
+        run: pnpm db:generate
+
+      - name: TypeScript check (no build errors)
+        working-directory: apps/${{ matrix.app }}
+        run: pnpm exec tsc --noEmit

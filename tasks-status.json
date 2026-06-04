@@ -1,0 +1,341 @@
+{
+  "lastUpdated": "2026-05-24T20:00:00.000Z",
+  "project": {
+    "name": "Jmart - منصة سلسلة التوريد الزراعي",
+    "version": "1.0.0",
+    "startDate": "2026-05-01",
+    "targetDate": "2026-07-01"
+  },
+  "phases": [
+    {
+      "id": "phase0",
+      "name": "المرحلة 0 — البنية التحتية والأساسيات",
+      "nameEn": "Phase 0 — Infrastructure & Foundations",
+      "color": "#6366f1",
+      "status": "completed"
+    },
+    {
+      "id": "phase1",
+      "name": "المرحلة 1 — اكتمال البوابات",
+      "nameEn": "Phase 1 — Portal Completeness",
+      "color": "#f59e0b",
+      "status": "completed"
+    },
+    {
+      "id": "phase2",
+      "name": "المرحلة 2 — عمليات الأدمن",
+      "nameEn": "Phase 2 — Admin Operations",
+      "color": "#3b82f6",
+      "status": "completed"
+    },
+    {
+      "id": "phase3",
+      "name": "المرحلة 3 — ميزات متقدمة",
+      "nameEn": "Phase 3 — Advanced Features",
+      "color": "#10b981",
+      "status": "in_progress"
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "phase": "phase0",
+      "subject": "بنية قاعدة البيانات (Prisma Schema)",
+      "description": "تصميم وإنشاء كامل schema قاعدة البيانات بجميع النماذج",
+      "status": "completed",
+      "priority": "critical",
+      "category": "backend",
+      "estimate": "3d"
+    },
+    {
+      "id": 2,
+      "phase": "phase0",
+      "subject": "نظام المصادقة JWT",
+      "description": "تسجيل دخول، تسجيل، تجديد الـ token، حراسة الـ routes",
+      "status": "completed",
+      "priority": "critical",
+      "category": "backend",
+      "estimate": "2d"
+    },
+    {
+      "id": 3,
+      "phase": "phase0",
+      "subject": "إدارة الأصناف (Categories CRUD)",
+      "description": "نظام تصنيف المنتجات مع Admin UI كامل",
+      "status": "completed",
+      "priority": "high",
+      "category": "admin",
+      "estimate": "1d"
+    },
+    {
+      "id": 4,
+      "phase": "phase0",
+      "subject": "إدارة المنتجات (Products CRUD)",
+      "description": "CRUD كامل للمنتجات مع DTOs و validation",
+      "status": "completed",
+      "priority": "high",
+      "category": "admin",
+      "estimate": "1d"
+    },
+    {
+      "id": 5,
+      "phase": "phase0",
+      "subject": "لوحة تحكم المزارع والمشتري",
+      "description": "إحصائيات، آخر الطلبات، الإشعارات، ملخص المخزون",
+      "status": "completed",
+      "priority": "high",
+      "category": "farmer",
+      "estimate": "1d"
+    },
+    {
+      "id": 6,
+      "phase": "phase0",
+      "subject": "نظام الطلبات الأساسي",
+      "description": "قائمة الطلبات، تفاصيل الطلب، قبول/رفض للمزارع، إلغاء للمشتري",
+      "status": "completed",
+      "priority": "high",
+      "category": "farmer",
+      "estimate": "2d"
+    },
+    {
+      "id": 7,
+      "phase": "phase0",
+      "subject": "صفحة الإشعارات",
+      "description": "قائمة الإشعارات مع فلترة وقراءة الكل وبادج حي في الـ navbar",
+      "status": "completed",
+      "priority": "medium",
+      "category": "farmer",
+      "estimate": "0.5d"
+    },
+    {
+      "id": 8,
+      "phase": "phase0",
+      "subject": "المدفوعات والفواتير",
+      "description": "payouts للمزارع، invoices للمشتري مع تسجيل دفعات",
+      "status": "completed",
+      "priority": "medium",
+      "category": "farmer",
+      "estimate": "1d"
+    },
+    {
+      "id": 9,
+      "phase": "phase0",
+      "subject": "العقود والنزاعات والملف الشخصي",
+      "description": "صفحات العقود، النزاعات، الملف الشخصي، التسجيل",
+      "status": "completed",
+      "priority": "medium",
+      "category": "farmer",
+      "estimate": "2d"
+    },
+    {
+      "id": 10,
+      "phase": "phase0",
+      "subject": "البحث الموحد Ctrl+K ونظام التقييم",
+      "description": "Global search في الأدمن، ratings module، real-time notifications",
+      "status": "completed",
+      "priority": "medium",
+      "category": "admin",
+      "estimate": "1d"
+    },
+    {
+      "id": 11,
+      "phase": "phase1",
+      "subject": "إدارة عروض المزارع (My Listings)",
+      "description": "صفحة لإدارة الـ lots النشطة: تعديل السعر والكمية، تفعيل/تعطيل، عرض إحصائيات كل عرض",
+      "status": "completed",
+      "priority": "high",
+      "category": "farmer",
+      "estimate": "1d"
+    },
+    {
+      "id": 12,
+      "phase": "phase1",
+      "subject": "تعديل الملف الشخصي",
+      "description": "نموذج تعديل بيانات المزارع/المشتري مع حفظ فعلي عبر API، تغيير الاسم والهاتف والعنوان",
+      "status": "completed",
+      "priority": "high",
+      "category": "farmer",
+      "estimate": "0.5d"
+    },
+    {
+      "id": 13,
+      "phase": "phase1",
+      "subject": "تفاصيل العقد مع Timeline",
+      "description": "صفحة /contracts/[id] تعرض بنود العقد الكاملة، التواريخ، حالة التوقيع لكل طرف، زر التوقيع",
+      "status": "completed",
+      "priority": "high",
+      "category": "farmer",
+      "estimate": "1d"
+    },
+    {
+      "id": 14,
+      "phase": "phase1",
+      "subject": "تفاصيل النزاع ورفع الأدلة",
+      "description": "صفحة /disputes/[id] مع تاريخ الحالات، رفع أدلة نصية، عرض ردود الأدمن، حالة التسوية",
+      "status": "completed",
+      "priority": "medium",
+      "category": "farmer",
+      "estimate": "1d"
+    },
+    {
+      "id": 15,
+      "phase": "phase1",
+      "subject": "تدفق إنشاء الطلب للمشتري",
+      "description": "زر 'اطلب الآن' في السوق يفتح modal لإدخال الكمية والملاحظات وإنشاء الطلب مباشرة",
+      "status": "completed",
+      "priority": "high",
+      "category": "buyer",
+      "estimate": "1d"
+    },
+    {
+      "id": 16,
+      "phase": "phase1",
+      "subject": "سجل حالات الطلب (Timeline Component)",
+      "description": "مكوّن timeline يعرض كل تغيير في حالة الطلب مع الوقت والسبب، يُستخدم في صفحة تفاصيل الطلب",
+      "status": "completed",
+      "priority": "medium",
+      "category": "farmer",
+      "estimate": "0.5d"
+    },
+    {
+      "id": 17,
+      "phase": "phase1",
+      "subject": "رفع مستندات KYC في الملف الشخصي",
+      "description": "رفع صور وثائق الهوية والسجل التجاري في صفحة الملف الشخصي مع عرض حالة المراجعة",
+      "status": "completed",
+      "priority": "medium",
+      "category": "farmer",
+      "estimate": "1d"
+    },
+    {
+      "id": 18,
+      "phase": "phase2",
+      "subject": "صفحة تفاصيل المزارع في الأدمن",
+      "description": "صفحة /farmers/[id] تعرض: بيانات المزارع الكاملة، مزارعه، إحصائياته، طلباته، ومنطقة مراجعة KYC مع أزرار قبول/رفض",
+      "status": "completed",
+      "priority": "high",
+      "category": "admin",
+      "estimate": "1.5d"
+    },
+    {
+      "id": 19,
+      "phase": "phase2",
+      "subject": "صفحة تفاصيل المشتري في الأدمن",
+      "description": "صفحة /buyers/[id] مع بيانات المشتري، فروعه، إحصائياته، فواتيره، ومراجعة KYC",
+      "status": "completed",
+      "priority": "high",
+      "category": "admin",
+      "estimate": "1d"
+    },
+    {
+      "id": 20,
+      "phase": "phase2",
+      "subject": "صفحة تفاصيل الطلب في الأدمن",
+      "description": "صفحة /orders/[id] مع عرض كامل للطلب، تغيير الحالة، إنشاء شحنة، ربط فاتورة، سجل الحالات",
+      "status": "completed",
+      "priority": "high",
+      "category": "admin",
+      "estimate": "1.5d"
+    },
+    {
+      "id": 21,
+      "phase": "phase2",
+      "subject": "إدارة اللوجستيك والشحنات",
+      "description": "إنشاء شحنة من طلب، تعيين سائق، تتبع حالة الشحنة، صفحة تفاصيل الشحنة في الأدمن",
+      "status": "completed",
+      "priority": "high",
+      "category": "admin",
+      "estimate": "2d"
+    },
+    {
+      "id": 22,
+      "phase": "phase2",
+      "subject": "إدارة الفواتير والمدفوعات في الأدمن",
+      "description": "إنشاء فاتورة، إصدارها، تسجيل الدفعات، موافقة على payouts، إدارة المبالغ المُستردة",
+      "status": "completed",
+      "priority": "high",
+      "category": "admin",
+      "estimate": "2d"
+    },
+    {
+      "id": 23,
+      "phase": "phase2",
+      "subject": "حل النزاعات في الأدمن",
+      "description": "صفحة تفاصيل النزاع للأدمن: تعيين محقق، مراجعة الأدلة، اقتراح حل، تنفيذ القرار",
+      "status": "completed",
+      "priority": "medium",
+      "category": "admin",
+      "estimate": "1.5d"
+    },
+    {
+      "id": 24,
+      "phase": "phase2",
+      "subject": "مهام سير العمل والموافقات",
+      "description": "صفحة workflow tasks مع إنشاء مهمة، تعيين للمستخدمين، تتبع SLA، نظام الموافقات متعدد المراحل",
+      "status": "completed",
+      "priority": "medium",
+      "category": "admin",
+      "estimate": "2d"
+    },
+    {
+      "id": 25,
+      "phase": "phase3",
+      "subject": "منشئ العقود (Contract Builder)",
+      "description": "معالج خطوات لإنشاء عقد توريد: اختيار الأطراف، المنتجات، الكميات، الأسعار، الشروط، إرسال للتوقيع",
+      "status": "completed",
+      "priority": "medium",
+      "category": "admin",
+      "estimate": "2d"
+    },
+    {
+      "id": 26,
+      "phase": "phase3",
+      "subject": "إدارة المناطق الجغرافية",
+      "description": "خريطة تفاعلية للمناطق، إدارة أسعار الشحن بين المناطق، تعيين مستودعات للمناطق",
+      "status": "pending",
+      "priority": "low",
+      "category": "admin",
+      "estimate": "2d"
+    },
+    {
+      "id": 27,
+      "phase": "phase3",
+      "subject": "تقارير وتصدير البيانات",
+      "description": "تصدير CSV لكل قسم (طلبات، مزارعون، مدفوعات)، تقارير دورية، رسوم بيانية مخصصة",
+      "status": "completed",
+      "priority": "low",
+      "category": "admin",
+      "estimate": "2d"
+    },
+    {
+      "id": 28,
+      "phase": "phase3",
+      "subject": "بوابة السائق",
+      "description": "تطبيق بسيط للسائق: قائمة الشحنات المعينة، تحديث الحالة، تأكيد التسليم مع صورة",
+      "status": "pending",
+      "priority": "medium",
+      "category": "driver",
+      "estimate": "3d"
+    },
+    {
+      "id": 29,
+      "phase": "phase3",
+      "subject": "إشعارات WebSocket الفورية",
+      "description": "استبدال polling بـ WebSocket حقيقي، toast notifications لحظية عند وصول طلب جديد أو تغيير حالة",
+      "status": "pending",
+      "priority": "low",
+      "category": "backend",
+      "estimate": "2d"
+    },
+    {
+      "id": 30,
+      "phase": "phase3",
+      "subject": "تحسين الأداء وPWA",
+      "description": "Service Worker، offline support، app manifest، Lighthouse score > 90، تحسين image optimization",
+      "status": "pending",
+      "priority": "low",
+      "category": "farmer",
+      "estimate": "2d"
+    }
+  ]
+}

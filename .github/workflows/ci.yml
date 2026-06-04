@@ -1,0 +1,232 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─── Lint & Type Check ─────────────────────────────────────────
+  lint-and-typecheck:
+    name: Lint & Type Check (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [api, admin, farmer]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          # Workspace uses a single root lockfile; per-app locks don't exist
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client (api only)
+        if: matrix.app == 'api'
+        working-directory: apps/api
+        run: pnpm db:generate
+
+      - name: Type check / Build
+        working-directory: apps/${{ matrix.app }}
+        run: |
+          if [ "${{ matrix.app }}" = "api" ]; then
+            pnpm build
+          else
+            pnpm exec tsc --noEmit
+          fi
+
+  # ─── Integration Tests (API + Postgres + Redis) ──────────────
+  integration-test:
+    name: API Integration Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4-alpine
+        env:
+          POSTGRES_DB: jmart_ci
+          POSTGRES_USER: jmart_user
+          POSTGRES_PASSWORD: jmart_pass
+        ports:
+          - 5432:5432
+        # tells GH Actions to wait until Postgres is accepting connections
+        options: >-
+          --health-cmd "pg_isready -U jmart_user -d jmart_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7.2-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Connection strings hardcoded to match the service containers above.
+      # No real secrets here — these are throwaway CI credentials.
+      DATABASE_URL: postgresql://jmart_user:jmart_pass@localhost:5432/jmart_ci?schema=public
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      JWT_ACCESS_SECRET: ci_access_secret_not_for_production_use_only
+      JWT_REFRESH_SECRET: ci_refresh_secret_not_for_production_use_only
+      NODE_ENV: test
+      PORT: 3000
+      CORS_ORIGINS: http://localhost:3002,http://localhost:3003
+      JMART_API_BASE: http://localhost:3000/api/v1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        working-directory: apps/api
+        run: pnpm db:generate
+
+      - name: Push schema to CI database
+        working-directory: apps/api
+        run: pnpm exec prisma db push --skip-generate
+
+      - name: Seed test users + reference data
+        working-directory: apps/api
+        run: pnpm db:seed
+
+      - name: Build API
+        working-directory: apps/api
+        run: pnpm build
+
+      - name: Start API in background
+        working-directory: apps/api
+        run: |
+          node dist/src/main.js &
+          echo $! > api.pid
+          # wait up to 30s for the API to start serving
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/api/docs > /dev/null 2>&1; then
+              echo "API is up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "API failed to start within 30s"
+          cat api.pid
+          exit 1
+
+      - name: Run integration test suite
+        working-directory: apps/api
+        run: pnpm test:integration
+
+      - name: Stop API
+        if: always()
+        working-directory: apps/api
+        run: |
+          if [ -f api.pid ]; then
+            kill $(cat api.pid) || true
+            rm api.pid
+          fi
+
+  # ─── Docker Build ──────────────────────────────────────────────
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, integration-test]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/api
+          file: ./apps/api/Dockerfile
+          target: production
+          push: false
+          tags: jmart/api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Admin image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/admin
+          file: ./apps/admin/Dockerfile
+          target: production
+          push: false
+          tags: jmart/admin:latest
+          build-args: |
+            NEXT_PUBLIC_API_URL=http://localhost/api
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Farmer image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/farmer
+          file: ./apps/farmer/Dockerfile
+          target: production
+          push: false
+          tags: jmart/farmer:latest
+          build-args: |
+            NEXT_PUBLIC_API_URL=http://localhost/api
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─── Deploy (only on push to main) ────────────────────────────
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            cd ${{ secrets.PROJECT_DIR || '/opt/jmart' }}
+            git pull origin main
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml up -d --build
+            docker system prune -f

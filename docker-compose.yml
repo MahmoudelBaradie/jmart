@@ -1,0 +1,106 @@
+version: '3.9'
+
+services:
+  # ─── PostgreSQL ───────────────────────────────────────────
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: jmart_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: jmart_db
+      POSTGRES_USER: jmart_user
+      POSTGRES_PASSWORD: jmart_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U jmart_user -d jmart_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ────────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: jmart_redis
+    restart: unless-stopped
+    command: redis-server --requirepass jmart_redis_pass --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', 'jmart_redis_pass', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── MinIO (S3-compatible File Storage) ──────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: jmart_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # ─── MailHog (Dev Email Server) ───────────────────────────
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: jmart_mailhog
+    restart: unless-stopped
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+
+  # ─── API (NestJS) ─────────────────────────────────────────
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: development
+    container_name: jmart_api
+    restart: unless-stopped
+    env_file:
+      - ./apps/api/.env
+    environment:
+      DATABASE_URL: postgresql://jmart_user:jmart_pass@postgres:5432/jmart_db?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: jmart_redis_pass
+      STORAGE_ENDPOINT: http://minio:9000
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: pnpm dev
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+
+networks:
+  default:
+    name: jmart_network

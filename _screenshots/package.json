@@ -1,0 +1,13 @@
+{
+  "name": "_screenshots",
+  "version": "1.0.0",
+  "description": "ملف HTML تفاعلي يعرض **كل شاشات النظام** (Mobile + Portal + Admin) في صفحة واحدة.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
