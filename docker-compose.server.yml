@@ -1,0 +1,96 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Server override — for a single VPS with NO public domain yet.
+#
+# Use this INSTEAD of docker-compose.prod.yml until you point a domain at the
+# server. It does three things differently from prod:
+#   1. Skips the docker nginx (the host already has one — we'll attach later
+#      when you take a domain).
+#   2. Publishes each Next.js app + the API on a host port in the 8100-range
+#      so it lives alongside the existing Odoo (8069), Postgres (5432), Redis
+#      (6379) and host nginx (80) without colliding.
+#   3. Bakes the public API URL into the bundles as http://<server-ip>:8100
+#      so browsers can reach the API directly.
+#
+# Run with:
+#   docker compose -f docker-compose.yml -f docker-compose.server.yml up -d --build
+#
+# Set PUBLIC_IP in your shell first:
+#   export PUBLIC_IP=62.171.147.73
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: production
+    env_file:
+      - ./apps/api/.env.server
+    command: node dist/main
+    volumes: []
+    ports:
+      - '8100:3000'                # API
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://62.171.147.73:8100/api/v1}
+    container_name: jmart_admin
+    restart: unless-stopped
+    ports:
+      - '8102:3002'                # Admin
+    depends_on:
+      - api
+
+  farmer:
+    build:
+      context: ./apps/farmer
+      dockerfile: Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://62.171.147.73:8100/api/v1}
+    container_name: jmart_farmer
+    restart: unless-stopped
+    ports:
+      - '8103:3003'                # Farmer / Buyer portal
+    depends_on:
+      - api
+
+  driver:
+    build:
+      context: ./apps/driver
+      dockerfile: Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://62.171.147.73:8100/api/v1}
+    container_name: jmart_driver
+    restart: unless-stopped
+    ports:
+      - '8104:3004'                # Driver portal
+    depends_on:
+      - api
+
+  # ─── Data plane: stays OFF the public internet ──────────────────────────
+  # These ports are explicitly empty so the data services are only reachable
+  # from inside the docker network — never from the IP.
+  postgres:
+    ports: []
+    restart: unless-stopped
+
+  redis:
+    ports: []
+    restart: unless-stopped
+
+  minio:
+    ports: []
+    restart: unless-stopped
+
+  # The full prod compose has an nginx service; we disable it here by giving
+  # it a profile that's never activated. The host's existing nginx will
+  # reverse-proxy these ports later when you add a domain.
+  nginx:
+    profiles: ["with-docker-nginx"]
