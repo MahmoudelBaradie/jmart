@@ -23,7 +23,7 @@ FROM node:20-alpine AS production
 # `prisma` CLI lives in devDependencies, which `pnpm install --prod` skips.
 # Install it as a global binary here so we can `prisma generate` against
 # @prisma/client (which IS in regular deps).
-RUN npm install -g pnpm prisma && apk add --no-cache curl
+RUN npm install -g pnpm prisma@5.10.2 && apk add --no-cache curl
 WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --prod --no-frozen-lockfile
