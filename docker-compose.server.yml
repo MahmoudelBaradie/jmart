@@ -43,9 +43,11 @@ services:
       SMTP_PORT: "587"
       NODE_ENV: production
     command: node dist/src/main.js
-    # Drop the bind-mount + node_modules tmpfs from the base file — in prod
-    # we use the built image as-is.
-    volumes: []
+    # Drop the dev bind-mount (./apps/api:/app) and node_modules tmpfs from
+    # the base file. Same `!reset []` pattern as ports — without it compose
+    # MERGES the lists and the host-mounted /app shadows the built image's
+    # /app/dist, so node can't find dist/src/main.js.
+    volumes: !reset []
     ports:
       - '8100:3000'                # API
     restart: unless-stopped
