@@ -214,6 +214,9 @@ export class GeoZonesService {
     if (Number.isNaN(lat) || Number.isNaN(lng)) {
       throw new NotFoundException('Invalid coordinates');
     }
+    // Prisma keeps column names camelCase by default, so they need quoting
+    // in raw SQL ("zoneCode" not zone_code). The table name itself is mapped
+    // to snake_case via @@map("geo_zones") in the schema.
     const rows = await this.prisma.$queryRaw<
       Array<{
         id: string;
@@ -227,17 +230,17 @@ export class GeoZonesService {
     >`
       SELECT
         id,
-        zone_code        AS "zoneCode",
-        zone_name        AS "zoneName",
-        zone_name_ar     AS "zoneNameAr",
-        zone_level::text AS "zoneLevel",
-        boundary_geo_json AS "boundaryGeoJson",
-        ST_Area(ST_GeomFromGeoJSON(boundary_geo_json::text))::float8 AS area
+        "zoneCode",
+        "zoneName",
+        "zoneNameAr",
+        "zoneLevel"::text AS "zoneLevel",
+        "boundaryGeoJson",
+        ST_Area(ST_GeomFromGeoJSON("boundaryGeoJson"::text))::float8 AS area
       FROM geo_zones
       WHERE status = 'ACTIVE'
-        AND boundary_geo_json IS NOT NULL
+        AND "boundaryGeoJson" IS NOT NULL
         AND ST_Contains(
-          ST_GeomFromGeoJSON(boundary_geo_json::text),
+          ST_GeomFromGeoJSON("boundaryGeoJson"::text),
           ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)
         )
       ORDER BY area ASC
