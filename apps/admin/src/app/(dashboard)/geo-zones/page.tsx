@@ -236,33 +236,38 @@ function ZoneModal({ mode, zone, existingZones, onClose }: ZoneModalProps) {
     boundaryGeoJson: z.boundaryGeoJson,
   }));
 
+  // Deliberately:
+  //  - bg-black/80 (not /50) so the dim overview map underneath doesn't
+  //    visually compete with the modal's editor map
+  //  - max-w-6xl + h-[90vh] flex column with a single scroll surface for
+  //    form fields, the map gets the rest of the height as a fixed flex child
+  //  - The toolbar stays inside the map element, not clipped by overflow
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white w-full max-w-4xl rounded-xl shadow-2xl flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b">
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white w-full max-w-6xl rounded-xl shadow-2xl flex flex-col h-[90vh]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b shrink-0">
           <h2 className="font-bold text-gray-900">
             {mode === 'create' ? 'New Service Zone' : `Edit ${zone?.zoneNameAr || zone?.zoneName}`}
           </h2>
           <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
 
-        <div className="p-4 space-y-3 overflow-y-auto">
-          {err && <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-red-700">{Array.isArray(err) ? err[0] : err}</div>}
-
-          <div className="grid grid-cols-2 gap-3">
+        <div className="p-4 shrink-0 border-b bg-gray-50">
+          {err && <div className="mb-3 bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-red-700">{Array.isArray(err) ? err[0] : err}</div>}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Field label="Zone Code *">
               <input type="text" value={zoneCode} onChange={(e) => setZoneCode(e.target.value)} placeholder="RY-NORTH-001" className={inputCls} disabled={mode === 'edit'} />
-            </Field>
-            <Field label="Level">
-              <select value={zoneLevel} onChange={(e) => setZoneLevel(e.target.value as any)} className={inputCls}>
-                {ZONE_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
-              </select>
             </Field>
             <Field label="Name (EN) *">
               <input type="text" value={zoneName} onChange={(e) => setZoneName(e.target.value)} placeholder="Riyadh North" className={inputCls} />
             </Field>
             <Field label="Name (AR)">
               <input type="text" value={zoneNameAr} onChange={(e) => setZoneNameAr(e.target.value)} placeholder="الرياض الشمال" className={inputCls} dir="rtl" />
+            </Field>
+            <Field label="Level">
+              <select value={zoneLevel} onChange={(e) => setZoneLevel(e.target.value as any)} className={inputCls}>
+                {ZONE_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
             </Field>
             <Field label="Parent">
               <select value={parentZoneId} onChange={(e) => setParentZoneId(e.target.value)} className={inputCls}>
@@ -272,27 +277,25 @@ function ZoneModal({ mode, zone, existingZones, onClose }: ZoneModalProps) {
                 ))}
               </select>
             </Field>
-            <div className="flex items-end text-xs text-gray-500">
-              {boundary?.coordinates
-                ? '✓ Boundary drawn — saving will persist it.'
-                : 'Draw a polygon on the map → save.'}
+            <div className="flex items-end text-xs">
+              <span className={boundary?.coordinates ? 'text-green-700 font-bold' : 'text-amber-600'}>
+                {boundary?.coordinates ? '✓ Boundary drawn' : '⚠ Use the polygon toolbar (top-right of map) to draw the boundary'}
+              </span>
             </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-gray-700 block mb-1">
-              Geofence boundary — use the toolbar to draw a polygon or rectangle
-            </label>
-            <ZoneMapEditor
-              value={boundary}
-              onChange={setBoundary}
-              overlayZones={overlay}
-              height={400}
-            />
           </div>
         </div>
 
-        <div className="flex gap-2 p-4 border-t bg-gray-50 rounded-b-xl">
+        {/* Map takes the remaining vertical space so the toolbar is always visible */}
+        <div className="flex-1 min-h-0 p-4">
+          <ZoneMapEditor
+            value={boundary}
+            onChange={setBoundary}
+            overlayZones={overlay}
+            height={0 /* ignored — the wrapper now controls height */}
+          />
+        </div>
+
+        <div className="flex gap-2 p-4 border-t bg-gray-50 rounded-b-xl shrink-0">
           <button onClick={onClose} className="flex-1 border border-gray-300 text-gray-700 font-medium py-2 rounded-lg text-sm hover:bg-gray-100">Cancel</button>
           <button
             onClick={() => save.mutate()}

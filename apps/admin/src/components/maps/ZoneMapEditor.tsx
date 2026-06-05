@@ -97,7 +97,11 @@ export default function ZoneMapEditor({
       });
 
       const drawControl = new (L as any).Control.Draw({
-        position: 'topright',
+        // topleft (under the +/- zoom buttons) instead of topright — the
+        // right corner gets visually clipped inside a max-w modal in some
+        // browsers (the toolbar is rendered but appears blank in screenshots).
+        // topleft is always visible.
+        position: 'topleft',
         edit: { featureGroup: drawn, remove: true },
         draw: {
           polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: '#16a34a', weight: 3 } },
@@ -148,10 +152,16 @@ export default function ZoneMapEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // When parent passes height: 0, we fill the parent (used inside the modal's
+  // flex container so the map takes all remaining space). Otherwise we honor
+  // the explicit pixel height (legacy callers).
+  const sizeStyle = height === 0
+    ? { width: '100%', height: '100%' }
+    : { height, width: '100%' };
   return (
     <div
       ref={containerRef}
-      style={{ height, width: '100%', borderRadius: 8, overflow: 'hidden', border: '1px solid #e5e7eb' }}
+      style={{ ...sizeStyle, borderRadius: 8, overflow: 'hidden', border: '1px solid #e5e7eb' }}
     />
   );
 }
