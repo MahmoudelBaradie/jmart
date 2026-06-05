@@ -2,9 +2,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { listingsApi, categoriesApi, farmerApi } from '@/lib/api';
+import { listingsApi, categoriesApi, farmerApi, pricingApi } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
-import { ChevronRight, CheckCircle, AlertCircle, Tag, MapPin } from 'lucide-react';
+import { ChevronRight, CheckCircle, AlertCircle, Tag, MapPin, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import Link from 'next/link';
 
 interface Category {
@@ -301,15 +301,10 @@ export default function NewListingPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 السعر (ر.س / كغ) *
               </label>
-              <input
-                type="number"
-                min="0.1"
-                step="0.1"
+              <PriceInputWithContext
+                productId={form.productId}
                 value={form.pricePerKg}
-                onChange={(e) => set('pricePerKg', e.target.value)}
-                required
-                placeholder="مثال: 4.5"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                onChange={(v) => set('pricePerKg', v)}
               />
             </div>
           </div>
@@ -367,6 +362,138 @@ export default function NewListingPage() {
           {loading ? 'جارٍ النشر…' : 'نشر العرض'}
         </button>
       </form>
+    </div>
+  );
+}
+
+/**
+ * Price field that adapts to the product's resolved pricing config.
+ *
+ *  - Fetches centralPrice, floor, ceiling, mode for the chosen product
+ *  - Renders a context badge: "سعر السوق 40 ر.س — النطاق 38-42"
+ *  - Live computes variance% as the farmer types
+ *  - Highlights green (in range), amber (HYBRID out of range, allowed),
+ *    red (STRICT out of range, will be rejected)
+ *  - REFERENCE mode → no range, just shows variance for context
+ *
+ * Pure UI; backend validation is the source of truth.
+ */
+function PriceInputWithContext({
+  productId,
+  value,
+  onChange,
+}: {
+  productId: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['pricing-resolve', productId],
+    queryFn: () =>
+      pricingApi.resolveProduct(productId).then((r: any) => r.data?.data ?? r.data),
+    enabled: !!productId,
+  });
+
+  const central = data?.centralPrice as number | null | undefined;
+  const floor = data?.floor as number | null | undefined;
+  const ceiling = data?.ceiling as number | null | undefined;
+  const mode = data?.mode as 'STRICT' | 'HYBRID' | 'REFERENCE' | undefined;
+  const flexPct = data?.flexibilityPct as number | undefined;
+
+  const priceNum = parseFloat(value);
+  const hasPrice = !isNaN(priceNum) && priceNum > 0;
+  const variancePct = hasPrice && central ? +(((priceNum - central) / central) * 100).toFixed(1) : null;
+  const inRange =
+    hasPrice && floor !== null && floor !== undefined && ceiling !== null && ceiling !== undefined
+      ? priceNum >= floor && priceNum <= ceiling
+      : true;
+  const willReject = mode === 'STRICT' && hasPrice && !inRange;
+
+  const borderClass = willReject
+    ? 'border-red-300 bg-red-50'
+    : hasPrice && !inRange && mode === 'HYBRID'
+      ? 'border-amber-300 bg-amber-50'
+      : hasPrice && inRange && central
+        ? 'border-green-300 bg-green-50'
+        : 'border-gray-200';
+
+  return (
+    <div>
+      <input
+        type="number"
+        min="0.1"
+        step="0.1"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+        placeholder="مثال: 4.5"
+        className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${borderClass}`}
+      />
+
+      {!productId && (
+        <p className="mt-1.5 text-xs text-gray-400">اختر المنتج أولاً لرؤية سعر السوق</p>
+      )}
+
+      {productId && isLoading && (
+        <p className="mt-1.5 text-xs text-gray-400">جارٍ تحميل سعر السوق…</p>
+      )}
+
+      {productId && data && central === null && (
+        <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-1.5">
+          ⚠ هذا المنتج لم يُسعَّر مركزيًا بعد. تواصل مع الإدارة.
+        </p>
+      )}
+
+      {productId && data && central !== null && central !== undefined && (
+        <div className="mt-2 text-xs space-y-1.5">
+          <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded p-2">
+            <div>
+              <span className="text-blue-900 font-bold">سعر السوق:</span>{' '}
+              <span className="text-blue-900">{central.toFixed(2)} ر.س/كغ</span>
+            </div>
+            <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-bold">
+              {mode}
+            </span>
+          </div>
+
+          {mode !== 'REFERENCE' && floor !== null && floor !== undefined && ceiling !== null && ceiling !== undefined && (
+            <div className="bg-gray-50 border border-gray-200 rounded p-2 text-gray-700">
+              <div className="font-bold mb-0.5">النطاق المسموح (±{flexPct}%):</div>
+              <div>{floor.toFixed(2)} — {ceiling.toFixed(2)} ر.س/كغ</div>
+            </div>
+          )}
+
+          {mode === 'REFERENCE' && (
+            <div className="bg-purple-50 border border-purple-200 rounded p-2 text-purple-900">
+              نمط مرجعي: لا يوجد نطاق ملزم. أنت حر بالسعر.
+            </div>
+          )}
+
+          {variancePct !== null && (
+            <div
+              className={`flex items-center gap-1.5 p-2 rounded border ${
+                willReject ? 'bg-red-50 border-red-200 text-red-800'
+                  : !inRange ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    : Math.abs(variancePct) < 0.5 ? 'bg-gray-50 border-gray-200 text-gray-700'
+                      : variancePct < 0 ? 'bg-green-50 border-green-200 text-green-800'
+                        : 'bg-blue-50 border-blue-200 text-blue-800'
+              }`}
+            >
+              {variancePct < -0.5 ? <TrendingDown size={14} /> : variancePct > 0.5 ? <TrendingUp size={14} /> : <Minus size={14} />}
+              <span className="font-bold">
+                {variancePct > 0 ? '+' : ''}{variancePct}% عن سعر السوق
+              </span>
+              {willReject && <span className="text-xs">— سيُرفض (نمط صارم)</span>}
+              {!willReject && !inRange && mode === 'HYBRID' && (
+                <span className="text-xs">— سيظهر بعلامة "خارج النطاق"</span>
+              )}
+              {inRange && variancePct < -2 && (
+                <span className="text-xs">— سعر منافس 👍</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

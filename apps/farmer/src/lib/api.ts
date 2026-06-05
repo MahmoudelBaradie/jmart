@@ -179,6 +179,11 @@ export const notificationsApi = {
   unreadCount: () => api.get('/notifications/my/unread-count'),
 };
 
+// ── Pricing (read-only resolve for farmers/buyers) ───────────
+export const pricingApi = {
+  resolveProduct: (id: string) => api.get(`/pricing/resolve/product/${id}`),
+};
+
 // ── Marketplace Banners (read-only for buyers/farmers) ───────
 export const bannersApi = {
   marketplace: (zoneId?: string) =>
