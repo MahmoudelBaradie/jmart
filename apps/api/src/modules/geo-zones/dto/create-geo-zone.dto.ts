@@ -5,6 +5,7 @@ import {
   IsUUID,
   IsEnum,
   IsNumber,
+  IsObject,
   Matches,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -47,6 +48,14 @@ export class CreateGeoZoneDto {
   @IsNumber()
   @Type(() => Number)
   centroidLng?: number;
+
+  @ApiPropertyOptional({
+    description: 'GeoJSON Polygon or MultiPolygon defining zone boundary',
+    example: { type: 'Polygon', coordinates: [[[46.6, 24.6], [46.7, 24.6], [46.7, 24.7], [46.6, 24.7], [46.6, 24.6]]] },
+  })
+  @IsOptional()
+  @IsObject()
+  boundaryGeoJson?: Record<string, any>;
 
   @ApiPropertyOptional({ description: 'Coverage start time in HH:MM format', example: '06:00' })
   @IsOptional()

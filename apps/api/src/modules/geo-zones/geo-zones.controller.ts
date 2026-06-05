@@ -49,6 +49,20 @@ export class GeoZonesController {
     return this.geoZonesService.getHierarchy();
   }
 
+  @Get('lookup')
+  @ApiOperation({
+    summary: 'Find which zones contain a lat/lng (PostGIS ST_Contains)',
+    description: 'Returns zones from smallest to largest containing area. Empty array → outside any service zone.',
+  })
+  @ApiQuery({ name: 'lat', required: true, type: Number, example: 24.7136 })
+  @ApiQuery({ name: 'lng', required: true, type: Number, example: 46.6753 })
+  async lookupByPoint(
+    @Query('lat') lat: string,
+    @Query('lng') lng: string,
+  ) {
+    return this.geoZonesService.lookupByPoint(parseFloat(lat), parseFloat(lng));
+  }
+
   @Get('rates')
   @ApiOperation({ summary: 'Get active shipping rates between two zones' })
   @ApiQuery({ name: 'fromZoneId', required: true, type: String })

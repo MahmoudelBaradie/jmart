@@ -78,8 +78,9 @@ export class GeoZonesService {
         zoneNameAr: dto.zoneNameAr,
         parentZoneId: dto.parentZoneId,
         zoneLevel: dto.zoneLevel,
-        centroidLat: dto.centroidLat,
-        centroidLng: dto.centroidLng,
+        boundaryGeoJson: dto.boundaryGeoJson ?? undefined,
+        centroidLat: dto.centroidLat ?? this.centroidOfGeoJson(dto.boundaryGeoJson),
+        centroidLng: dto.centroidLng ?? this.centroidOfGeoJson(dto.boundaryGeoJson, 'lng'),
         coverageStartTime: dto.coverageStartTime,
         coverageEndTime: dto.coverageEndTime,
         maxOrderWeightKg: dto.maxOrderWeightKg,
@@ -108,6 +109,7 @@ export class GeoZonesService {
         ...(dto.zoneNameAr !== undefined && { zoneNameAr: dto.zoneNameAr }),
         ...(dto.parentZoneId !== undefined && { parentZoneId: dto.parentZoneId }),
         ...(dto.zoneLevel !== undefined && { zoneLevel: dto.zoneLevel }),
+        ...((dto as any).boundaryGeoJson !== undefined && { boundaryGeoJson: (dto as any).boundaryGeoJson }),
         ...(dto.centroidLat !== undefined && { centroidLat: dto.centroidLat }),
         ...(dto.centroidLng !== undefined && { centroidLng: dto.centroidLng }),
         ...(dto.coverageStartTime !== undefined && { coverageStartTime: dto.coverageStartTime }),
@@ -198,6 +200,64 @@ export class GeoZonesService {
         toZone: { select: { id: true, zoneName: true, zoneCode: true } },
       },
     });
+  }
+
+  /**
+   * Find which active zones contain a given lat/lng point. Uses PostGIS
+   * `ST_Contains` so a single SQL pass scans all zones — fast even at
+   * thousands of polygons once the GIST index is added later.
+   *
+   * Returns zones from smallest to largest containing area, so callers
+   * (signup form, marketplace filter) can pick the most specific zone.
+   */
+  async lookupByPoint(lat: number, lng: number) {
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      throw new NotFoundException('Invalid coordinates');
+    }
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        zoneCode: string;
+        zoneName: string;
+        zoneNameAr: string | null;
+        zoneLevel: string;
+        boundaryGeoJson: any;
+        area: number;
+      }>
+    >`
+      SELECT
+        id,
+        zone_code        AS "zoneCode",
+        zone_name        AS "zoneName",
+        zone_name_ar     AS "zoneNameAr",
+        zone_level::text AS "zoneLevel",
+        boundary_geo_json AS "boundaryGeoJson",
+        ST_Area(ST_GeomFromGeoJSON(boundary_geo_json::text))::float8 AS area
+      FROM geo_zones
+      WHERE status = 'ACTIVE'
+        AND boundary_geo_json IS NOT NULL
+        AND ST_Contains(
+          ST_GeomFromGeoJSON(boundary_geo_json::text),
+          ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)
+        )
+      ORDER BY area ASC
+      LIMIT 10
+    `;
+    return rows;
+  }
+
+  /** Naive centroid of GeoJSON Polygon outer ring — only used when admin
+   *  draws a polygon but doesn't manually provide centroidLat/Lng. */
+  private centroidOfGeoJson(geo: any, axis: 'lat' | 'lng' = 'lat'): number | undefined {
+    if (!geo?.coordinates) return undefined;
+    let ring: number[][];
+    if (geo.type === 'Polygon') ring = geo.coordinates[0];
+    else if (geo.type === 'MultiPolygon') ring = geo.coordinates[0]?.[0];
+    else return undefined;
+    if (!ring?.length) return undefined;
+    const idx = axis === 'lat' ? 1 : 0; // GeoJSON is [lng, lat]
+    const sum = ring.reduce((acc, p) => acc + p[idx], 0);
+    return sum / ring.length;
   }
 
   async getCapacityStats(zoneId: string, days: number) {
