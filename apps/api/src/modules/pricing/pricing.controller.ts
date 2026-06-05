@@ -69,6 +69,26 @@ export class PricingController {
     return this.pricing.resolveForCategory(id);
   }
 
+  // ─── Daily pricing board (admin specialist screen) ─────────────
+  @Get('board')
+  @UseGuards(RolesGuard)
+  @Roles(InternalRole.SUPER_ADMIN, InternalRole.OPS_MANAGER)
+  @ApiOperation({ summary: 'All-products pricing board with yesterday price, sparkline, listings count' })
+  board(@Query('categoryId') categoryId?: string) {
+    return this.pricing.getBoard(categoryId);
+  }
+
+  @Patch('board/bulk')
+  @UseGuards(RolesGuard)
+  @Roles(InternalRole.SUPER_ADMIN, InternalRole.OPS_MANAGER)
+  @ApiOperation({ summary: 'Apply multiple central-price changes at once (per-product result + summary)' })
+  bulkUpdate(
+    @Body() body: { changes: Array<{ productId: string; newPrice: number; reason?: string }> },
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.pricing.bulkUpdate(body?.changes ?? [], userId);
+  }
+
   // ─── Price history ───────────────────────────────────────────────
   @Get('history/product/:id')
   @ApiOperation({ summary: 'Get price change history for a product' })

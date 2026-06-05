@@ -280,6 +280,10 @@ export const pricingApi = {
     api.patch(`/pricing/product/${id}`, data),
   history: (id: string, days?: number) =>
     api.get(`/pricing/history/product/${id}`, { params: { days } }),
+  // Daily Pricing Board screen
+  board: (categoryId?: string) => api.get('/pricing/board', { params: categoryId ? { categoryId } : undefined }),
+  bulkUpdate: (changes: Array<{ productId: string; newPrice: number; reason?: string }>) =>
+    api.patch('/pricing/board/bulk', { changes }),
 };
 
 // ── Marketplace Banners ──────────────────────────────────────────

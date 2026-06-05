@@ -216,6 +216,153 @@ export class PricingService {
     return rows.map((r) => ({ ...r, id: r.id.toString() })); // BigInt → string for JSON
   }
 
+  /**
+   * One-shot dataset for the Daily Pricing Board screen — every priced
+   * product with everything the admin needs to make a decision in a single
+   * row: yesterday's price (for "Δ%"), last 7 days for the sparkline,
+   * active-listings count (so the admin knows the blast radius before
+   * changing a number), and the resolved floor/ceiling.
+   *
+   * Implemented in 4 queries total (not N+1):
+   *   1. products + category
+   *   2. system pricing settings (singleton)
+   *   3. last 8 days of price history (filtered in JS to per-product)
+   *   4. catalog-item counts grouped by productId
+   */
+  async getBoard(categoryId?: string) {
+    const [products, settings, sinceHistory, listingCounts] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { isActive: true, ...(categoryId && { categoryId }) },
+        include: { category: true },
+        orderBy: [{ category: { name: 'asc' } }, { name: 'asc' }],
+      }),
+      this.getSystemSettings(),
+      this.prisma.productPriceHistory.findMany({
+        where: { changedAt: { gte: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000) } },
+        orderBy: { changedAt: 'desc' },
+      }),
+      this.prisma.farmerCatalogItem.groupBy({
+        by: ['productId'],
+        where: { isListed: true },
+        _count: { _all: true },
+      }),
+    ]);
+
+    // Group history by productId for fast lookup. Each list is sorted newest-first.
+    const historyByProduct = new Map<string, typeof sinceHistory>();
+    for (const h of sinceHistory) {
+      const arr = historyByProduct.get(h.productId) ?? [];
+      arr.push(h);
+      historyByProduct.set(h.productId, arr);
+    }
+    const listingsByProduct = new Map(listingCounts.map((c) => [c.productId, c._count._all]));
+
+    const yesterdayCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    return products.map((p) => {
+      const config = this.resolve(p, p.category, settings);
+      const history = historyByProduct.get(p.id) ?? [];
+
+      // Find the price as of "yesterday": the most-recent entry whose
+      // changedAt is older than 24h ago. The oldPrice on that entry is
+      // the price BEFORE that change, so we use newPrice for "after that
+      // change took effect".
+      const yesterdayEntry = history.find((h) => h.changedAt < yesterdayCutoff);
+      const yesterdayPrice = yesterdayEntry?.newPrice ?? null;
+
+      // Sparkline: build a series of (day, price) for the last 7 days.
+      // Walk back day-by-day; at each day, the price is the most-recent
+      // newPrice of an entry that happened at or before that day's end.
+      // Falls back to the current pricePerUnit when no history exists.
+      const today = new Date(); today.setHours(23, 59, 59, 999);
+      const series: { day: string; price: number | null }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const dayEnd = new Date(today); dayEnd.setDate(today.getDate() - i);
+        const entry = history.find((h) => h.changedAt <= dayEnd);
+        const price = entry?.newPrice
+          ?? (i === 0 ? p.pricePerUnit : null);
+        series.push({
+          day: dayEnd.toISOString().slice(0, 10),
+          price: price !== null ? Number(price) : null,
+        });
+      }
+
+      return {
+        id: p.id,
+        sku: p.sku,
+        name: p.name,
+        nameAr: p.nameAr,
+        unitOfMeasure: p.unitOfMeasure,
+        category: { id: p.category.id, name: p.category.name, nameAr: p.category.nameAr },
+        currentPrice: p.pricePerUnit !== null ? Number(p.pricePerUnit) : null,
+        yesterdayPrice: yesterdayPrice !== null ? Number(yesterdayPrice) : null,
+        sparkline: series,
+        floor: config.floor,
+        ceiling: config.ceiling,
+        flexibilityPct: config.flexibilityPct,
+        mode: config.mode,
+        activeListings: listingsByProduct.get(p.id) ?? 0,
+        priceUpdatedAt: p.priceUpdatedAt,
+      };
+    });
+  }
+
+  /**
+   * Bulk update wrapper used by the Daily Pricing Board "Save N changes"
+   * button. Each change runs through the same setCentralPrice flow used
+   * by the per-product modal, so out-of-range actions still apply
+   * (SUSPEND / SNAP / WARN) and ProductPriceHistory still gets a row.
+   *
+   * Failures don't roll back successful items — we return per-item
+   * results so the UI can highlight which rows failed.
+   */
+  async bulkUpdate(
+    changes: Array<{ productId: string; newPrice: number; reason?: string }>,
+    updatedById?: string,
+  ) {
+    const results: Array<{
+      productId: string;
+      ok: boolean;
+      newPrice?: number;
+      error?: string;
+      summary?: { suspended: number; snapped: number; warned: number };
+    }> = [];
+
+    for (const c of changes) {
+      try {
+        const product = await this.prisma.product.findUnique({ where: { id: c.productId } });
+        if (!product) {
+          results.push({ productId: c.productId, ok: false, error: 'Product not found' });
+          continue;
+        }
+        const oldPrice = product.pricePerUnit !== null ? Number(product.pricePerUnit) : null;
+        await this.prisma.product.update({
+          where: { id: c.productId },
+          data: {
+            pricePerUnit: c.newPrice,
+            priceUpdatedAt: new Date(),
+            priceUpdatedBy: updatedById ?? null,
+          },
+        });
+        const summary = await this.applyCentralPriceChange(c.productId, oldPrice, c.newPrice, updatedById, c.reason);
+        results.push({
+          productId: c.productId,
+          ok: true,
+          newPrice: c.newPrice,
+          summary: { suspended: summary.suspended, snapped: summary.snapped, warned: summary.warned },
+        });
+      } catch (e: any) {
+        results.push({ productId: c.productId, ok: false, error: e?.message ?? 'unknown' });
+      }
+    }
+    return {
+      total: changes.length,
+      succeeded: results.filter((r) => r.ok).length,
+      failed: results.filter((r) => !r.ok).length,
+      results,
+    };
+  }
+
   /** Used by the Category edit UI to show "what your override changes vs system". */
   async resolveForCategory(categoryId: string) {
     const cat = await this.prisma.productCategory.findUnique({ where: { id: categoryId } });
