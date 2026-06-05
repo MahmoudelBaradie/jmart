@@ -34,6 +34,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
+import { PricingModule } from './modules/pricing/pricing.module';
 import { RatingsModule } from './modules/ratings/ratings.module';
 import { AuctionsModule } from './modules/auctions/auctions.module';
 import { BannersModule } from './modules/banners/banners.module';
@@ -101,6 +102,7 @@ import { SocialModule } from './modules/social/social.module';
     DashboardModule,
     CategoriesModule,
     ProductsModule,
+    PricingModule,
     RatingsModule,
     AuctionsModule,
     BannersModule,

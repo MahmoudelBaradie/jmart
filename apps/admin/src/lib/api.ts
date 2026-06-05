@@ -268,6 +268,20 @@ export const notificationsApi = {
   markAllRead: () => api.post('/notifications/my/read-all'),
 };
 
+// ── Pricing (system / category / product cascading config) ───────
+export const pricingApi = {
+  getSettings: () => api.get('/pricing/settings'),
+  updateSettings: (data: Record<string, unknown>) => api.patch('/pricing/settings', data),
+  resolveProduct: (id: string) => api.get(`/pricing/resolve/product/${id}`),
+  resolveCategory: (id: string) => api.get(`/pricing/resolve/category/${id}`),
+  setCategoryOverride: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/pricing/category/${id}`, data),
+  setProductOverride: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/pricing/product/${id}`, data),
+  history: (id: string, days?: number) =>
+    api.get(`/pricing/history/product/${id}`, { params: { days } }),
+};
+
 // ── Marketplace Banners ──────────────────────────────────────────
 export const bannersApi = {
   list: (params?: Record<string, unknown>) => api.get('/banners', { params }),

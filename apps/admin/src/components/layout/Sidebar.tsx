@@ -44,6 +44,7 @@ export default function Sidebar({ drawerOpen = false, onCloseDrawer }: SidebarPr
     { label: t.nav.inventory, href: '/inventory', icon: Package },
     { label: t.nav.products, href: '/products', icon: ShoppingBag },
     { label: t.nav.prices, href: '/products/prices', icon: DollarSign },
+    { label: 'إعدادات التسعير', href: '/settings/pricing', icon: Settings },
     { label: t.nav.categories, href: '/categories', icon: Tag },
     { label: t.nav.warehouses, href: '/warehouses', icon: MapPin },
     { label: t.nav.geoZones, href: '/geo-zones', icon: Map },

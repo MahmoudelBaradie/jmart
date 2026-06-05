@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { PricingService } from '../pricing/pricing.service';
 
 export { CreateProductDto, UpdateProductDto };
 
@@ -16,7 +17,10 @@ export interface ProductsQueryDto {
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pricing: PricingService,
+  ) {}
 
   async findAll(dto: ProductsQueryDto) {
     const where: Prisma.ProductWhereInput = {
@@ -139,50 +143,43 @@ export class ProductsService {
   }
 
   /**
-   * Set the CENTRAL admin-controlled price for a product, and propagate it to
-   * every FarmerCatalogItem for that product so the marketplace + checkout
-   * reflect it immediately. Runs in a single transaction.
+   * Set the CENTRAL admin-controlled price for a product.
+   *
+   * Under the new pricing model the central price is the SUSPECTED MARKET price;
+   * farmers keep their own per-listing price subject to the resolved mode:
+   *   - STRICT    → farmer was already inside [floor, ceiling]; if the new
+   *                 price moves them outside, the configured out-of-range
+   *                 action runs (SUSPEND / SNAP / WARN).
+   *   - HYBRID    → out-of-range listings get flagged for buyer-side display.
+   *   - REFERENCE → no enforcement; central price is informational only.
+   *
+   * The blind cascade that used to overwrite every farmer's price is gone —
+   * that was the old centralized-only model. Now `PricingService.applyCentralPriceChange`
+   * handles the re-evaluation per the resolved config.
    */
-  async setCentralPrice(productId: string, pricePerUnit: number, updatedById?: string) {
+  async setCentralPrice(productId: string, pricePerUnit: number, updatedById?: string, reason?: string) {
     const product = await this.findOne(productId);
 
     if (typeof pricePerUnit !== 'number' || !isFinite(pricePerUnit) || pricePerUnit <= 0) {
       throw new Error('pricePerUnit must be a positive number');
     }
 
-    // Respect priceFloor / priceCeiling guard-rails if set.
-    const floor = (product as any).priceFloor != null ? Number((product as any).priceFloor) : null;
-    const ceiling = (product as any).priceCeiling != null ? Number((product as any).priceCeiling) : null;
-    if (floor != null && pricePerUnit < floor) {
-      throw new Error(`Price ${pricePerUnit} is below the configured floor (${floor}).`);
-    }
-    if (ceiling != null && pricePerUnit > ceiling) {
-      throw new Error(`Price ${pricePerUnit} is above the configured ceiling (${ceiling}).`);
-    }
+    const oldPrice = (product as any).pricePerUnit != null ? Number((product as any).pricePerUnit) : null;
 
-    return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.product.update({
-        where: { id: productId },
-        data: {
-          pricePerUnit,
-          priceUpdatedAt: new Date(),
-          priceUpdatedBy: updatedById ?? null,
-        } as any,
-      });
-
-      // Cascade to all farmer catalog items for this product (any grade /
-      // packaging) so marketplace + new orders price uniformly.
-      await tx.farmerCatalogItem.updateMany({
-        where: { productId },
-        data: {
-          pricePerUnit,
-          lastPriceUpdated: new Date(),
-          updatedBy: updatedById ?? 'admin',
-        },
-      });
-
-      return updated;
+    const updated = await this.prisma.product.update({
+      where: { id: productId },
+      data: {
+        pricePerUnit,
+        priceUpdatedAt: new Date(),
+        priceUpdatedBy: updatedById ?? null,
+      } as any,
     });
+
+    // Re-evaluate existing farmer listings + log history.
+    // Returns { suspended, snapped, warned } so the controller can surface a summary.
+    const summary = await this.pricing.applyCentralPriceChange(productId, oldPrice, pricePerUnit, updatedById, reason);
+
+    return { ...updated, _priceChangeSummary: summary };
   }
 
   async getPriceOverview() {
