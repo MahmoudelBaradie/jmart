@@ -211,6 +211,10 @@ export class InventoryService {
           product: {
             select: {
               id: true, sku: true, name: true, nameAr: true, unitOfMeasure: true,
+              // pricePerUnit here is the CENTRAL admin-set market price.
+              // The buyer marketplace uses it to show "+/- vs market" badges
+              // next to the farmer's offer.
+              pricePerUnit: true,
               category: { select: { id: true, name: true, nameAr: true } },
             },
           },
@@ -226,23 +230,28 @@ export class InventoryService {
     // Enrich each lot with `pricePerKg` from the matching FarmerCatalogItem.
     // Price lives on the catalog item (farmerId + productId + grade), NOT on
     // the lot itself. Without this enrichment the marketplace shows 0 SAR
-    // for every product.
+    // for every product. We also pull isOutOfRange so the UI can flag
+    // overpriced listings.
     if (data.length > 0) {
       const catalogItems = await this.prisma.farmerCatalogItem.findMany({
         where: {
           OR: data.map((l) => ({ farmerId: l.farmerId, productId: l.productId, grade: l.grade })),
         },
-        select: { farmerId: true, productId: true, grade: true, pricePerUnit: true },
+        select: { farmerId: true, productId: true, grade: true, pricePerUnit: true, isOutOfRange: true },
       });
       const priceKey = (fId: string, pId: string, g: string) => `${fId}|${pId}|${g}`;
-      const priceMap = new Map(
-        catalogItems.map((c) => [priceKey(c.farmerId, c.productId, c.grade), c.pricePerUnit]),
+      const catalogMap = new Map(
+        catalogItems.map((c) => [priceKey(c.farmerId, c.productId, c.grade), c]),
       );
       for (const lot of data) {
-        const price = priceMap.get(priceKey(lot.farmerId, lot.productId, lot.grade));
+        const ci = catalogMap.get(priceKey(lot.farmerId, lot.productId, lot.grade));
+        const price = ci?.pricePerUnit ?? null;
         // Expose under both common field names so existing frontends pick it up
-        (lot as any).pricePerKg = price ?? null;
-        (lot as any).askingPricePerKg = price ?? null;
+        (lot as any).pricePerKg = price;
+        (lot as any).askingPricePerKg = price;
+        // For the marketplace badge: lets the UI render "خارج النطاق" without
+        // a second round-trip to load the catalog item.
+        (lot as any).isOutOfRange = !!ci?.isOutOfRange;
       }
     }
 

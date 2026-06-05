@@ -168,6 +168,19 @@ function ProductCard({
   const catNameAr  = lot.product?.category?.nameAr;
   const farmer     = lot.farmer?.businessName || '';
   const price      = lot.askingPricePerKg ?? lot.pricePerUnit ?? 0;
+  // Market context for the buyer: the central price set by Jmart admin
+  // (Product.pricePerUnit) is the market reference. If it's available we
+  // show a small variance badge so the buyer can spot a deal or know a
+  // seller is over-priced.
+  const centralPrice = lot.product?.pricePerUnit !== null && lot.product?.pricePerUnit !== undefined
+    ? Number(lot.product.pricePerUnit)
+    : null;
+  const variancePct = centralPrice && price
+    ? +(((price - centralPrice) / centralPrice) * 100).toFixed(1)
+    : null;
+  // Listing was flagged out of range by the central price update.
+  // (Only farmer can have this; the lot's catalog item carries the flag.)
+  const isOutOfRange = !!lot.isOutOfRange;
   // API uses qtyAvailable (and stringifies Decimal); accept all known aliases.
   const available  = Number(lot.qtyAvailable ?? lot.remainingKg ?? lot.availableQty ?? lot.quantityKg ?? 0);
   // Display real discount only — until the API provides a `compareAtPrice`
@@ -232,6 +245,31 @@ function ProductCard({
               <span className="text-[10px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded">
                 -{discount}%
               </span>
+            </div>
+          )}
+
+          {/* Market-price context — lets the buyer spot deals at a glance.
+              Hidden when we don't have a central reference price. */}
+          {variancePct !== null && centralPrice && (
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              <span className="text-[10px] text-gray-500">
+                سعر السوق <span className="font-mono">{formatCurrency(centralPrice)}</span>
+              </span>
+              {Math.abs(variancePct) >= 0.5 && (
+                <span
+                  className={cn(
+                    'text-[10px] font-bold px-1.5 py-0.5 rounded',
+                    variancePct < 0 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700',
+                  )}
+                >
+                  {variancePct > 0 ? '+' : ''}{variancePct}%
+                </span>
+              )}
+              {isOutOfRange && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700">
+                  ⚠ خارج النطاق
+                </span>
+              )}
             </div>
           )}
         </div>
