@@ -102,16 +102,23 @@ export default function GeoZonesPage() {
           ) : zones.length === 0 ? (
             <Card><EmptyState icon={Map} title="No zones yet" /></Card>
           ) : view === 'map' ? (
-            <Card>
-              <ZonesOverviewMap
-                zones={zones}
-                onSelect={(id) => setEditingZone(zones.find((z) => z.id === id) ?? null)}
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                Polygon = drawn boundary. Dot = legacy zone with only a center point — click to add a polygon.
-                {withBoundary.length}/{zones.length} zones have boundaries.
-              </p>
-            </Card>
+            // While a create/edit modal is open we render only the modal's map
+            // and hide this overview map entirely. Leaflet renders tiles + draw
+            // controls with z-index 200/800, which leaks ABOVE the modal's
+            // bg-black/80 backdrop (z-50). Unmounting the overview keeps that
+            // from happening — much cleaner than fighting z-index per layer.
+            (showCreate || editingZone) ? null : (
+              <Card>
+                <ZonesOverviewMap
+                  zones={zones}
+                  onSelect={(id) => setEditingZone(zones.find((z) => z.id === id) ?? null)}
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Polygon = drawn boundary. Dot = legacy zone with only a center point — click to add a polygon.
+                  {withBoundary.length}/{zones.length} zones have boundaries.
+                </p>
+              </Card>
+            )
           ) : (
             <Card noPadding>
               <div className="overflow-x-auto">
@@ -279,7 +286,7 @@ function ZoneModal({ mode, zone, existingZones, onClose }: ZoneModalProps) {
             </Field>
             <div className="flex items-end text-xs">
               <span className={boundary?.coordinates ? 'text-green-700 font-bold' : 'text-amber-600'}>
-                {boundary?.coordinates ? '✓ Boundary drawn' : '⚠ Use the polygon toolbar (top-right of map) to draw the boundary'}
+                {boundary?.coordinates ? '✓ Boundary drawn' : '⚠ Use the polygon toolbar (top-left of map) to draw the boundary'}
               </span>
             </div>
           </div>
