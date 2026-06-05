@@ -11,7 +11,8 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import Pagination from '@/components/shared/Pagination';
 import EmptyState from '@/components/shared/EmptyState';
 import { PageSpinner } from '@/components/ui/Spinner';
-import { Search, Plus, ShoppingBag, Pencil, PowerOff, Tag, DollarSign, X, Check } from 'lucide-react';
+import { Search, Plus, ShoppingBag, Pencil, PowerOff, Tag, DollarSign, X, Check, Settings } from 'lucide-react';
+import PricingOverrideEditor from '@/components/pricing/PricingOverrideEditor';
 
 interface Product {
   id: string;
@@ -75,6 +76,8 @@ export default function ProductsPage() {
   const [activeFilter, setActiveFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // null = pricing override modal closed. Carries name for the title.
+  const [pricingFor, setPricingFor] = useState<{ id: string; name: string } | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState('');
   const [priceFor, setPriceFor] = useState<Product | null>(null);
@@ -306,6 +309,13 @@ export default function ProductsPage() {
                             <DollarSign size={14} />
                           </button>
                           <button
+                            onClick={() => setPricingFor({ id: p.id, name: p.nameAr || p.name })}
+                            className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600"
+                            title="إعدادات التسعير (تجاوز الفئة/النظام)"
+                          >
+                            <Settings size={14} />
+                          </button>
+                          <button
                             onClick={() => openEdit(p)}
                             className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
                             title="تعديل"
@@ -343,6 +353,15 @@ export default function ProductsPage() {
 
       {priceFor && (
         <SetPriceModal product={priceFor} onClose={() => setPriceFor(null)} />
+      )}
+
+      {pricingFor && (
+        <PricingOverrideEditor
+          entityType="product"
+          entityId={pricingFor.id}
+          entityName={pricingFor.name}
+          onClose={() => setPricingFor(null)}
+        />
       )}
 
       {/* Modal */}

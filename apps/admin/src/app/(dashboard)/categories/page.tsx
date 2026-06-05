@@ -21,7 +21,9 @@ import {
   PowerOff,
   Thermometer,
   Clock,
+  DollarSign,
 } from 'lucide-react';
+import PricingOverrideEditor from '@/components/pricing/PricingOverrideEditor';
 
 interface Category {
   id: string;
@@ -108,6 +110,9 @@ export default function CategoriesPage() {
   // ── Modals ────────────────────────────────────────────────────────────────
   const [showCreate, setShowCreate] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Single piece of state for "which category's pricing-override modal is open".
+  // null = closed. We carry the name so the modal title can show it.
+  const [pricingFor, setPricingFor] = useState<{ id: string; name: string } | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState('');
 
@@ -363,6 +368,13 @@ export default function CategoriesPage() {
                             >
                               <Pencil size={14} />
                             </button>
+                            <button
+                              onClick={() => setPricingFor({ id: cat.id, name: cat.nameAr || cat.name })}
+                              className="p-1.5 rounded hover:bg-green-50 text-gray-400 hover:text-green-600"
+                              title="إعدادات التسعير"
+                            >
+                              <DollarSign size={14} />
+                            </button>
                             {cat.isActive && (
                               <button
                                 onClick={() => deactivateMutation.mutate(cat.id)}
@@ -573,6 +585,15 @@ export default function CategoriesPage() {
           </div>
         </div>
       </Modal>
+
+      {pricingFor && (
+        <PricingOverrideEditor
+          entityType="category"
+          entityId={pricingFor.id}
+          entityName={pricingFor.name}
+          onClose={() => setPricingFor(null)}
+        />
+      )}
     </div>
   );
 }
