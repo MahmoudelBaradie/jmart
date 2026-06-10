@@ -229,11 +229,34 @@ export default function MyFarmsPage() {
               />
             </Field>
 
-            {save.isError && (
-              <p className="text-xs text-red-600 bg-red-50 rounded-lg p-2">
-                تعذر الحفظ — تأكد من تعبئة الحقول المطلوبة.
-              </p>
-            )}
+            {save.isError && (() => {
+              // Surface the real backend error so the user knows what to fix.
+              // class-validator returns either a single string or an array of
+              // strings under `message`. Status-specific hints help too.
+              const err = save.error as any;
+              const status = err?.response?.status;
+              const raw = err?.response?.data?.message ?? err?.response?.data?.errors;
+              const arr = Array.isArray(raw) ? raw : raw ? [raw] : [];
+              const hint =
+                status === 401 ? 'انتهت الجلسة — أعد تسجيل الدخول.'
+                : status === 403 ? 'صلاحياتك لا تسمح بإضافة مزرعة.'
+                : status === 404 ? 'الحساب غير موجود — راجع الإدارة.'
+                : status === 429 ? 'حاول لاحقًا — تم تجاوز الحد المسموح.'
+                : null;
+              return (
+                <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg p-2 space-y-1">
+                  <div className="font-bold">تعذر الحفظ:</div>
+                  {hint && <div>{hint}</div>}
+                  {arr.length > 0 ? (
+                    <ul className="list-disc pr-4 space-y-0.5">
+                      {arr.map((m: string, i: number) => <li key={i}>{m}</li>)}
+                    </ul>
+                  ) : !hint && (
+                    <div>تأكد من تعبئة كل الحقول المطلوبة (اسم المزرعة، المنطقة، العنوان، الإحداثيات).</div>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="flex gap-2 pt-2">
               <button
