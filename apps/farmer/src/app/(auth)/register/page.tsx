@@ -107,8 +107,26 @@ export default function RegisterPage() {
       setUser(meRes.data);
       setStep('done');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(Array.isArray(msg) ? msg[0] : msg || 'حدث خطأ، حاول مرة أخرى');
+      // Surface ALL backend validation errors (errors[] array) — the previous
+      // code only showed `message: 'Validation failed'` which gave the user
+      // no idea WHICH field was wrong (password rules, missing field, etc).
+      const resp = (err as any)?.response?.data;
+      const errs: string[] = Array.isArray(resp?.errors) ? resp.errors
+        : Array.isArray(resp?.message) ? resp.message
+        : resp?.message ? [resp.message]
+        : [];
+      // Translate the most common backend rules into Arabic for clarity.
+      const translate = (m: string): string => {
+        if (/uppercase.*lowercase.*number/i.test(m)) return 'كلمة المرور يجب أن تحتوي على حرف كبير وصغير ورقم على الأقل';
+        if (/password.*8/i.test(m) || /shorter than.*8/i.test(m)) return 'كلمة المرور قصيرة — على الأقل 8 أحرف';
+        if (/email/i.test(m)) return 'البريد الإلكتروني غير صالح';
+        if (/phone/i.test(m)) return 'صيغة رقم الجوال غير صحيحة';
+        if (/email already/i.test(m) || /already exists/i.test(m)) return 'هذا البريد مسجَّل بالفعل';
+        if (/farmerType/i.test(m)) return 'نوع النشاط الزراعي غير صحيح';
+        if (/businessName/i.test(m)) return 'اسم النشاط التجاري مطلوب';
+        return m;
+      };
+      setError(errs.length ? errs.map(translate).join(' · ') : 'حدث خطأ، حاول مرة أخرى');
     } finally {
       setLoading(false);
     }
