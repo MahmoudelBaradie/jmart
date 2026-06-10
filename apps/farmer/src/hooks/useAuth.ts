@@ -25,14 +25,23 @@ export function useAuth() {
   useEffect(() => {
     const stored = getUser<PortalUser>();
     if (stored && getToken()) {
+      // Render immediately from cache so the UI doesn't blink.
       setUserState(stored);
-      // Restore last active role
       const savedRole = localStorage.getItem(ROLE_KEY) as ActiveRole | null;
       const hasFarmer = !!stored.farmer;
       const hasBuyer = !!stored.buyer;
       if (savedRole === 'BUYER' && hasBuyer) setActiveRoleState('BUYER');
       else if (hasFarmer) setActiveRoleState('FARMER');
       else if (hasBuyer) setActiveRoleState('BUYER');
+
+      // Then quietly re-fetch from /auth/me so server-side changes (KYC
+      // approval, profile updates) show up without a logout/login cycle.
+      // Failures are swallowed: if the token is invalid the next protected
+      // call's 401 interceptor will redirect.
+      authApi.me().then((r) => {
+        const me = r.data as PortalUser;
+        if (me) { setUser(me); setUserState(me); }
+      }).catch(() => { /* tolerate transient errors */ });
     }
     setLoading(false);
   }, []);
